@@ -9,7 +9,7 @@
     <script src="TemplateData/UnityProgress.js"></script>
     <script src="Build/UnityLoader.js"></script>
     <script>
-      var unityInstance = UnityLoader.instantiate("unityContainer", "Build/Build17.json", {onProgress: UnityProgress});
+      var unityInstance = UnityLoader.instantiate("unityContainer", "Build/Build18.json", {onProgress: UnityProgress});
     </script>
 
 
@@ -159,6 +159,13 @@
         unityInstance.SendMessage('AdsManager', 'TryToLoadCustomRewardVideo');
       }
     }
+    else if (method === "joinGroup") {
+      if (data === "already.member") {
+        unityInstance.SendMessage('VKMechanicsController', 'OpenGroup');
+      } else if (data == "group.access.denied" || data == "common.finder") {
+        unityInstance.SendMessage('VKMechanicsController', 'NoGroup');
+      }
+    }
   }
 
   function OKInitialization() {
@@ -167,7 +174,6 @@
       function() {
         var geo_location = rParams.ip_geo_location.split(",");
         var language = geo_location[0];
-        console.log(language);
         unityInstance.SendMessage('PlayerManager', 'GetPlayerLanguage', language);
         unityInstance.SendMessage('PlayerManager', 'GetPlayerName', rParams.user_name);
         unityInstance.SendMessage('PlayerManager', 'PlayerAuthorized');
@@ -197,6 +203,10 @@
         {"type": "link", "url": link}
       ]};
       FAPI.UI.postMediatopic(attachment);
+    }
+
+    function OKJoinGroup(id) {
+      FAPI.invokeUIMethod("joinGroup", id);
     }
 
     // VK
@@ -266,7 +276,9 @@
 
     function VKInvite() {
       vkBridge.send("VKWebAppShowInviteBox").catch(err => {
-        VK.callMethod("showInviteBox");
+        if (err.error_type !== "client_error") {
+          VK.callMethod("showInviteBox");
+        }
       })
     }
 
@@ -309,6 +321,18 @@
       vkBridge.send("VKWebAppAddToFavorites").then(res => {
         if (res.result == true) {
           unityInstance.SendMessage('VKMechanicsController', 'InFavorite');
+        }
+      })
+    }
+
+    function VKJoinGroup(id) {
+      vkBridge.send("VKWebAppJoinGroup", {"group_id": Number(id)}).then(res => {
+        if (res.result === true) {
+          unityInstance.SendMessage('VKMechanicsController', 'OpenGroup');
+        }
+      }).catch(err => {
+        if (err.error_type !== "client_error") {
+        unityInstance.SendMessage('VKMechanicsController', 'NoGroup');
         }
       })
     }
